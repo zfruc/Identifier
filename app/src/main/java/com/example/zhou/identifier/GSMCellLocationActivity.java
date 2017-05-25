@@ -8,6 +8,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.lang.Runnable;
 import java.util.logging.LogRecord;
 
 import android.app.Activity;
@@ -57,6 +58,10 @@ public class GSMCellLocationActivity extends Activity {
     int lac;
     int cellId;
     int neighbornum;
+
+    int mcc;
+    int mnc;
+
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -65,6 +70,7 @@ public class GSMCellLocationActivity extends Activity {
 
     Handler handler = new Handler() {
         public void  handleMessage(android.os.Message msg){
+            Log.i("handle.msg",""+msg.what);
             switch (msg.what)
             {
                 case 1:
@@ -78,6 +84,8 @@ public class GSMCellLocationActivity extends Activity {
             }
         }
     };
+
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -101,8 +109,8 @@ public class GSMCellLocationActivity extends Activity {
                 }
                 // 返回值MCC + MNC
                 String operator = mTelephonyManager.getNetworkOperator();
-                final int mcc = Integer.parseInt(operator.substring(0, 3));
-                final int mnc = Integer.parseInt(operator.substring(3));
+                mcc = Integer.parseInt(operator.substring(0, 3));
+                mnc = Integer.parseInt(operator.substring(3));
 
                 if (mTelephonyManager.PHONE_TYPE_GSM == mTelephonyManager.getPhoneType()) {
                     // 中国移动和中国联通获取LAC、CID的方式
@@ -131,7 +139,8 @@ public class GSMCellLocationActivity extends Activity {
                     neighborCellLoc.add(new CellLoc(info1.getLac(),info1.getCid(),-113+2*info1.getRssi()));
                 }
            //     Log.i(TAG, " 获取邻区基站信息:" + sb.toString());
-                Thread t = new Thread(){
+                new Thread(){
+                    @Override
                     public void run(){
                         try{
                             Message msg = new Message();
@@ -146,19 +155,18 @@ public class GSMCellLocationActivity extends Activity {
                                     URL url = new URL(getstr);
                                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                                     conn.setRequestMethod("GET");
-                                    if (conn.getResponseCode()==200){
+                                    if (conn.getResponseCode()==200) {
                                         InputStream instream = conn.getInputStream();
                                         XmlPullParser parser = Xml.newPullParser();
-                                        parser.setInput(instream,"UTF-8");
+                                        parser.setInput(instream, "UTF-8");
                                         int event = parser.getEventType();
-                                        while(event!=XmlPullParser.END_DOCUMENT){
-                                            Log.i("Start","Start parsing");
-                                            switch (event){
+                                        while (event != XmlPullParser.END_DOCUMENT) {
+                                            Log.i("Start", "Start parsing");
+                                            switch (event) {
                                                 case XmlPullParser.START_TAG:
-                                                    if ("lat".equals(parser.getName())){
+                                                    if ("lat".equals(parser.getName())) {
                                                         cellLoc.setLat(Double.parseDouble(parser.getText()));
-                                                    }
-                                                    else if("loc".equals(parser.getName())){
+                                                    } else if ("loc".equals(parser.getName())) {
                                                         cellLoc.setLon(Double.parseDouble(parser.getText()));
                                                     }
                                                     break;
@@ -170,14 +178,18 @@ public class GSMCellLocationActivity extends Activity {
                                             event = parser.next();
                                         }
                                     }
+
                                 }
+                                Log.i("info","get location end.");
+                                msg.what = 1;
+                                handler.sendMessage(msg);
                             }
                         }catch (Exception e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
                     }
-                };
+                }.start();
             }
         });
         // ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -188,6 +200,7 @@ public class GSMCellLocationActivity extends Activity {
     //show neighboring cell tower in textView
     public void showNeighbor()
     {
+        Log.i("neiborCellLoc.SIZE",""+neighborCellLoc.size());
         if (neighborCellLoc==null)
         {
             SBtext.setText("cannot get neighboring cell location");
