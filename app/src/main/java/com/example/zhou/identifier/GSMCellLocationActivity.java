@@ -208,6 +208,10 @@ public class GSMCellLocationActivity extends Activity {
         else
         {
             StringBuffer text = new StringBuffer("");
+            if(neighborCellLoc.size()==0)
+            {
+                text.append("no neighboring cells.\n");
+            }
             for (CellLoc cellloc:neighborCellLoc)
             {
                 text.append("lac:"+cellloc.getLac());
