@@ -13,6 +13,7 @@ import java.util.logging.LogRecord;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,13 +21,17 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
 import android.telephony.NeighboringCellInfo;
+import android.telephony.PhoneStateListener;
+import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 import android.util.Xml;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -54,6 +59,9 @@ public class GSMCellLocationActivity extends Activity {
     private static final String TAG = "GSMCellLocationActivity";
     TextView MCCtext, MNCtext, LACtext, CIDtext, SBtext, numtext;
     ArrayList<CellLoc> neighborCellLoc;
+
+    TelephonyManager telephonyManager;
+    MyPhoneStateListener MyListener;
 
     int lac;
     int cellId;
@@ -96,6 +104,19 @@ public class GSMCellLocationActivity extends Activity {
         LACtext = (TextView) findViewById(R.id.textViewLAC);
         CIDtext = (TextView) findViewById(R.id.textViewCID);
         SBtext = (TextView) findViewById(R.id.textView7SB);// 获取基站信息
+        Button SkipButton = (Button)findViewById(R.id.button2) ;
+
+        telephonyManager= (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        MyListener = new MyPhoneStateListener();
+
+        SkipButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(GSMCellLocationActivity.this,SingleCellLocation.class);
+                startActivity(intent);
+            }
+        });
 
 
         findViewById(R.id.button1).setOnClickListener(new View.OnClickListener() {
@@ -136,7 +157,7 @@ public class GSMCellLocationActivity extends Activity {
                 neighbornum = infos.size();
                 neighborCellLoc = new ArrayList<CellLoc>(neighbornum);
                 for (NeighboringCellInfo info1 : infos) { // 根据邻区总数进行循环
-                    neighborCellLoc.add(new CellLoc(info1.getLac(),info1.getCid(),-113+2*info1.getRssi()));
+                    neighborCellLoc.add(new CellLoc(info1.getLac(),info1.getCid(),info1.getRssi()));
                 }
            //     Log.i(TAG, " 获取邻区基站信息:" + sb.toString());
                 new Thread(){
@@ -195,6 +216,9 @@ public class GSMCellLocationActivity extends Activity {
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
        // client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        telephonyManager.listen(MyListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+        // telephonyManager.listen(celllistener, PhoneStateListener.LISTEN_CELL_LOCATION); // 基站位置的变化
     }
 
     //show neighboring cell tower in textView
@@ -216,7 +240,7 @@ public class GSMCellLocationActivity extends Activity {
             {
                 text.append("lac:"+cellloc.getLac());
                 text.append("cid:"+cellloc.getCid());
-                text.append("bsss:"+cellloc.getBSSS());
+                text.append("bsss:"+cellloc.getRSSI());
                 text.append("lat:"+cellloc.getLat());
                 text.append("lon:"+cellloc.getLon());
                 text.append("\n");
@@ -260,5 +284,21 @@ public class GSMCellLocationActivity extends Activity {
         // See https://g.co/AppIndexing/AndroidStudio for more information.
 //        AppIndex.AppIndexApi.end(client, getIndexApiAction());
 //        client.disconnect();
+    }
+
+    private class MyPhoneStateListener extends PhoneStateListener
+    {
+        /* Get the Signal strength from the provider, each tiome there is an update  从得到的信号强度,每个tiome供应商有更新*/
+        @Override
+
+        public void onSignalStrengthsChanged(SignalStrength signalStrength)
+        {
+            super.onSignalStrengthsChanged(signalStrength);
+            if (signalStrength.getGsmSignalStrength() != 99) {
+                Toast.makeText(getApplicationContext(),
+                        "Go to Firstdroid!!! GSM Cinr = " + String.valueOf(signalStrength.getGsmSignalStrength() * 2 - 113) + "dbM", Toast.LENGTH_SHORT).show();
+                System.out.println("****" + String.valueOf(signalStrength.getGsmSignalStrength() * 2 - 113));
+            }
+        }
     }
 }

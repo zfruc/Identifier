@@ -4,17 +4,17 @@ package com.example.zhou.identifier;
  * Created by Zhou on 2017/5/18.
  */
 
-public class CellLoc {
+public class CellLoc implements Comparable{
     private int lac = 0;
     private int cid = 0;
     private double lat = 0.0;
     private double lon = 0.0;
-    private int BSSS = 0;
+    private int RSSI = 0;
 
-    public  CellLoc(int givenlac,int givencid,int givenbsss){
+    public  CellLoc(int givenlac,int givencid,int givenrssi){
         this.lac = givenlac;
         this.cid = givencid;
-        this.BSSS = givenbsss;
+        this.RSSI = givenrssi;
     }
 
     public void setLat(double givenlat){
@@ -31,8 +31,8 @@ public class CellLoc {
     }
     public double getLon(){return lon;}
 
-    public double getBSSS() {
-        return BSSS;
+    public double getRSSI() {
+        return RSSI;
     }
 
     public int getCid() {
@@ -41,5 +41,11 @@ public class CellLoc {
 
     public int getLac() {
         return lac;
+    }
+
+    @Override
+    public int compareTo(Object o ){
+        CellLoc compare_o = (CellLoc) o;
+        return  compare_o.RSSI - RSSI;
     }
 }
